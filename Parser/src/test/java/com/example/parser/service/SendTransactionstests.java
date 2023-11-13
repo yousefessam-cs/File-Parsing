@@ -1,30 +1,20 @@
 package com.example.parser.service;
 
+import com.example.parser.service.Impl.PublicKeyLoaderImpl;
 import com.example.parser.service.Impl.SendTransactionImpl;
-import com.rabbitmq.client.ConnectionFactory;
-import org.aspectj.lang.annotation.Before;
-import org.assertj.core.api.Assert;
-import org.checkerframework.checker.units.qual.C;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @SpringBootTest
 public class SendTransactionstests {
@@ -36,15 +26,18 @@ public class SendTransactionstests {
     private SendTransactionImpl sendTransactionImpl;
     @Autowired
     private SendTransactionImpl getSendTransactionImpl1;
+    @Autowired
+    private PublicKeyLoaderImpl publicKeyLoader;
 
 
 
     @Test
-    public void testSendTransactionsToQueueSuccess() {
+    public void testSendTransactionsToQueueSuccess() throws Exception{
 
         // Set up the necessary data for testing
         String transaction = "FTCIBEGCX0012123456789101NBEGCX0013123456789102000000001200EGP202301012314014efa36bf";
         String status = "success";
+        String transactionReference="4efa36bf";
 
         // Capture the printed output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -52,7 +45,7 @@ public class SendTransactionstests {
         System.setOut(printStream);
 
         // Call the method being tested
-        getSendTransactionImpl1.sendTransactionsToQueue(transaction,status);
+        getSendTransactionImpl1.sendTransactionsToQueue(transaction,status,transactionReference);
         String output = outputStream.toString().trim();
 
         assertEquals("Succeeded Message Sent", output);
@@ -62,7 +55,7 @@ public class SendTransactionstests {
      // verify(getSendTransactionImpl1, times(1)).sendTransactionsToQueue(transaction,status);
     }
     @Test
-    public void testSendTransactionsToQueueFailed() {
+    public void testSendTransactionsToQueueFailed() throws Exception{
 
         // Create an instance of SendTransactionImpl with the mocked RabbitTemplate
         //SendTransactionImpl sendTransaction = new SendTransactionImpl(rabbitTemplate);
@@ -70,13 +63,14 @@ public class SendTransactionstests {
         // Set up the necessary data for testing
         String transaction = "FTCIBEGCX0012123456789101NBEGCX0013123456789102000000012000EGP2023081117140114efa3bf";
         String status = "failed";
+        String transactionReference="4efa3bf";
         // Capture the printed output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(outputStream);
         System.setOut(printStream);
 
         // Call the method being tested
-        getSendTransactionImpl1.sendTransactionsToQueue(transaction, status);
+        getSendTransactionImpl1.sendTransactionsToQueue(transaction, status,transactionReference);
         String output = outputStream.toString().trim();
 
         assertEquals("Failed Message Sent", output);
@@ -88,23 +82,25 @@ public class SendTransactionstests {
     @BeforeEach
     public void setup() {
         rabbitTemplate = new RabbitTemplate();
-        sendTransactionImpl = new SendTransactionImpl(rabbitTemplate);
+        sendTransactionImpl = new SendTransactionImpl(rabbitTemplate, publicKeyLoader);
     }
     @Test
-    public void testSendTransactionsToQueueWithEmptyTransaction() {
+    public void testSendTransactionsToQueueWithEmptyTransaction() throws Exception{
         // Create an instance of SendTransactionImpl with the mocked RabbitTemplate
         //SendTransactionImpl sendTransaction = new SendTransactionImpl(rabbitTemplate);
 
         // Set up the necessary data for testing
         String transaction = "";
         String status = "success";
+        String transactionRef="";
         // Capture the printed output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(outputStream);
         System.setOut(printStream);
+        publicKeyLoader.loadPublicKeyFromFile("D:\\backup\\FileParsing\\Parser\\src\\main\\resources\\keys\\public.pem");
 
         // Call the method being tested
-        sendTransactionImpl .sendTransactionsToQueue(transaction, status);
+        sendTransactionImpl .sendTransactionsToQueue(transaction, status,transactionRef);
 
         String output = outputStream.toString().trim();
 
@@ -116,19 +112,20 @@ public class SendTransactionstests {
 
 
     @Test
-    public void testSendTransactionsToQueueWithNullStatus() {
+    public void testSendTransactionsToQueueWithNullStatus() throws Exception{
         // Create an instance of SendTransactionImpl with the mocked RabbitTemplate
        // SendTransactionImpl sendTransaction = new SendTransactionImpl(rabbitTemplate);
 
         // Set up the necessary data for testing
         String transaction = "FTCIBEGCX0012123456789101NBEGCX0013123456789102000000001200EGP202301012314014efa36bf";
         String status = null;
+        String transactionReference="4efa36bf";
         // Capture the printed output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(outputStream);
         System.setOut(printStream);
 
-        sendTransactionImpl.sendTransactionsToQueue(transaction,status);
+        sendTransactionImpl.sendTransactionsToQueue(transaction,status,transactionReference);
 
         String output = outputStream.toString().trim();
 
@@ -136,10 +133,11 @@ public class SendTransactionstests {
 
     }
     @Test
-    public void testSendTransactionsToQueueWithEmptyMessageAndNullStatus() {
+    public void testSendTransactionsToQueueWithEmptyMessageAndNullStatus() throws Exception{
         // Set up the necessary data for testing
         String transaction = "";
         String status = null;
+        String transactionRef="";
 
         // Call the method being tested
 
@@ -148,7 +146,7 @@ public class SendTransactionstests {
         PrintStream printStream = new PrintStream(outputStream);
         System.setOut(printStream);
 
-        sendTransactionImpl.sendTransactionsToQueue(transaction, status);
+        sendTransactionImpl.sendTransactionsToQueue(transaction, status,transactionRef);
 
         // Verify the output
         String output = outputStream.toString().trim();

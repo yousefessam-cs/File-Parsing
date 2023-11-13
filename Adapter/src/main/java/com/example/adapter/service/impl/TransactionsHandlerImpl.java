@@ -4,9 +4,13 @@ import com.example.adapter.entity.FileData;
 import com.example.adapter.service.TransactionsHandler;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +24,10 @@ public class TransactionsHandlerImpl implements TransactionsHandler {
     private String queue ;
 
     private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private TransactionSecurityUtilImpl transactionSecurityUtil;
+    @Autowired
+    private KeyFileManager keyFileManager;
 
     public TransactionsHandlerImpl(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
@@ -54,16 +62,28 @@ public class TransactionsHandlerImpl implements TransactionsHandler {
 
     }
     public void sendTransactionsToQueue(String data,long fileId,String fileName) {
-        List<String> transactions = getTransactions(data);
-        for (String transaction : transactions) {
-            rabbitTemplate.convertAndSend(exchange, queue, transaction, message -> {
-                MessageProperties properties = message.getMessageProperties();
-                properties.setMessageId("transaction");
-                properties.setHeader("fileId", String.valueOf(fileId));
-                properties.setHeader("fileName", fileName);
-                return message;
-            });
+        try {
+            KeyPair keyPair=transactionSecurityUtil.generateKeyPair();
+            PublicKey publicKey = keyPair.getPublic();
+            PrivateKey privateKey = keyPair.getPrivate();
+            keyFileManager.savePrivateKeyToFile(privateKey,"private");
+            keyFileManager.savePublicKeyToFile(publicKey,"public");
+            List<String> transactions = getTransactions(data);
+            for (String transaction : transactions) {
+                String encryptedTransaction = transactionSecurityUtil.encrypt(transaction, publicKey);
+                rabbitTemplate.convertAndSend(exchange, queue, encryptedTransaction, message -> {
+                    MessageProperties properties = message.getMessageProperties();
+                    properties.setMessageId("transaction");
+                    properties.setHeader("fileId", String.valueOf(fileId));
+                    properties.setHeader("fileName", fileName);
+                    return message;
+                });
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
         }
+
     }
 
 

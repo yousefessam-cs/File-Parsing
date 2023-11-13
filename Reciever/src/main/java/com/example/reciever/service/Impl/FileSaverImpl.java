@@ -21,12 +21,12 @@ public class FileSaverImpl implements FileSaver {
     }
     @Override
     @SneakyThrows
-    public void saveFailedFile(String messageData) {
+    public void saveFailedFile(String messageData,String transactionRef) {
         File failedFolder = new File(appConfig.getFailedPath());
         if (!failedFolder.exists()) {
             failedFolder.mkdirs();
         }
-        String baseFileName = "Failed_transaction";
+        String baseFileName = "Failed_transaction_" + transactionRef;
         String extension = ".txt";
         int counter = 1;
         String fileName = baseFileName + extension;
@@ -43,12 +43,12 @@ public class FileSaverImpl implements FileSaver {
     }
     @Override
     @SneakyThrows
-    public void saveSuccessFile(String messageData) {
+    public void saveSuccessFile(String messageData,String transactionRef) {
         File successFolder = new File(appConfig.getSuccessPath());
         if (!successFolder.exists()) {
             successFolder.mkdirs();
         }
-        String baseFileName = "Succeeded_transaction";
+        String baseFileName = "succeeded_Transaction_" + transactionRef;
         String extension = ".txt";
         int counter = 1;
         String fileName = baseFileName + extension;

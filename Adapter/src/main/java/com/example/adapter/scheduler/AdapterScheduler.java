@@ -4,9 +4,7 @@ import com.example.adapter.constants.AppConfig;
 import com.example.adapter.entity.FileData;
 import com.example.adapter.repository.FileDataRepository;
 import com.example.adapter.service.ProcessingFile;
-import com.example.adapter.service.impl.LoadProcessingFileImpl;
-import com.example.adapter.service.impl.MoveFileToProcessingImpl;
-import com.example.adapter.service.impl.MovingFileToFailedImpl;
+import com.example.adapter.service.impl.*;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,6 +25,8 @@ public class AdapterScheduler {
     private final AppConfig appConfig;
     private MovingFileToFailedImpl movingFileToFailed;
     private FileDataRepository fileDataRepository;
+
+
     // if file exists in source folder
     // move to processing folder
     // load data from processing folder file
